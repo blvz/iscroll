@@ -411,7 +411,12 @@ function IScroll (el, options) {
 	this._init();
 	this.refresh();
 
-	this.scrollTo(this.options.startX, this.options.startY);
+  var min = this._calcMinPos();
+
+	this.scrollTo(
+    Math.max(this.options.startX, min.x),
+    Math.max(this.options.startY, min.y)
+  );
 	this.enable();
 }
 
@@ -724,20 +729,32 @@ IScroll.prototype = {
 		}, this.options.resizePolling);
 	},
 
+  _calcMinPos: function () {
+    var sw = this.scroller.clientWidth * this.scale;
+    var sh = this.scroller.clientHeight * this.scale;
+
+    return {
+      x: sw >= this.wrapperWidth ? 0 : this.wrapperWidth / 2 - sw / 2,
+      y: sh >= this.wrapperHeight ? 0 : this.wrapperHeight / 2 - sh / 2
+    }
+  },
+
 	resetPosition: function (time) {
 		var x = this.x,
 			y = this.y;
 
 		time = time || 0;
 
-		if ( !this.hasHorizontalScroll || this.x > 0 ) {
-			x = 0;
+    var min = this._calcMinPos();
+
+		if ( !this.hasHorizontalScroll || this.x > min.x ) {
+			x = min.x;
 		} else if ( this.x < this.maxScrollX ) {
 			x = this.maxScrollX;
 		}
 
-		if ( !this.hasVerticalScroll || this.y > 0 ) {
-			y = 0;
+		if ( !this.hasVerticalScroll || this.y > min.y ) {
+			y = min.y;
 		} else if ( this.y < this.maxScrollY ) {
 			y = this.maxScrollY;
 		}
@@ -956,6 +973,10 @@ IScroll.prototype = {
 	},
 
 	_translate: function (x, y) {
+    var min = this._calcMinPos();
+    if (min.x > 0) x = Math.max(x, min.x);
+    if (min.y > 0) y = Math.max(y, min.y);
+
 		if ( this.options.useTransform ) {
 
 /* REPLACE START: _translate */			this.scrollerStyle[utils.style.transform] = 'translate(' + x + 'px,' + y + 'px) scale(' + this.scale + ') ' + this.translateZ;/* REPLACE END: _translate */
@@ -1306,7 +1327,7 @@ IScroll.prototype = {
 			return;
 		}
 
-		deltaScale = this.scale + wheelDeltaY / 5;
+		deltaScale = this.scale + (wheelDeltaY || 0) / 5;
 
 		this.zoom(deltaScale, e.pageX, e.pageY, 0);
 	},
@@ -2301,14 +2322,16 @@ Indicator.prototype = {
 	},
 
 	_pos: function (x, y) {
-		if ( x < 0 ) {
-			x = 0;
+    var min = this._calcMinPos();
+
+		if ( x < min.x ) {
+			x = min.x;
 		} else if ( x > this.maxPosX ) {
 			x = this.maxPosX;
 		}
 
-		if ( y < 0 ) {
-			y = 0;
+		if ( y < min.y ) {
+			y = min.y;
 		} else if ( y > this.maxPosY ) {
 			y = this.maxPosY;
 		}
